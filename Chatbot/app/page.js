@@ -9,6 +9,28 @@ export default function Home() {
   }])
   const [message, SetMessage] = useState('')
 
+  const sendMessage = async () => {
+    setMessages('')
+    setMessages((message) => [
+      ...messages,
+      { role: "user", content: message },
+      { role: "assistant", content: '' },
+    ])
+    const response = fetch('/api/chat', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify([...messages, { role: 'user', content: message }])
+    }).then(async (res) => {
+      const reader = res.body.getReader()
+      const decoder = new TextDecoder()
+
+      let result = ''
+    })
+
+
+  }
   return <Box width='100vw'
     height='100vh'
     display='flex'
