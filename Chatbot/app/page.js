@@ -1,52 +1,84 @@
 'use client'
 import Image from "next/image";
-import { Box, Stack } from '@mui/material'
+
+import { Box, Stack, Button, TextField } from '@mui/material'
 import { useState } from 'react'
+
+
 export default function Home() {
-  const [messages, setMessages] = useState([{
-    role: "assistant",
-    content: 'Hi, I am your Astrological assistant, how can I help you?'
-  }])
-  const [message, SetMessage] = useState('')
+  const [messages, setMessages] = useState([
+    {
+      role: "assistant",
+      content: 'Hi, I am your Astrological assistant, how can I help you?'
+    },
+  ])
+  const [message, setMessage] = useState('')
+
 
   const sendMessage = async () => {
-    setMessages('')
-    setMessages((message) => [
-      ...messages,
+    // Clear the message input field
+    setMessage('');
+
+    // Add the new user message to the message array
+    setMessages((prevMessages) => [
+      ...prevMessages,
       { role: "user", content: message },
       { role: "assistant", content: '' },
-    ])
-    const response = fetch('/api/chat', {
+    ]);
+
+    // Make the API call
+    const response = await fetch('/api/chat', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify([...messages, { role: 'user', content: message }])
-    }).then(async (res) => {
-      const reader = res.body.getReader()
-      const decoder = new TextDecoder()
+      body: JSON.stringify([...messages, { role: 'user', content: message }]),
+    });
 
-      let result = ''
-    })
+    // Process the response
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let result = '';
 
+    reader.read().then(function processText({ done, value }) {
+      if (done) {
+        return result;
+      }
+      const text = decoder.decode(value || new Int8Array(), { stream: true });
+      setMessages((prevMessages) => {
+        let lastMessage = prevMessages[prevMessages.length - 1];
+        let otherMessages = prevMessages.slice(0, prevMessages.length - 1);
 
-  }
-  return <Box width='100vw'
+        return [
+          ...otherMessages,
+          {
+            ...lastMessage,
+            content: lastMessage.content + text,
+          },
+        ];
+      });
+      return reader.read().then(processText);
+    });
+  };
+
+  return (<Box width='100vw'
     height='100vh'
     display='flex'
     flexDirection='column'
     justifyContent='center'
-    alignItems='center'>
+    alignItems='center'
+  >
     <Stack direction='column'
       width='600px'
       height='700px'
-      border='1px solid black'
+      border='1px solid pink'
       p={2}
-      spacing={3}>
+      spacing={3}
+    >
       <Stack direction='column'
         flexGrow={1}
         maxHeight='100%'
-        p={2}
+        spacing={2}
         overflow='auto'
       >
         {messages.map((message, index) => (
@@ -73,6 +105,16 @@ export default function Home() {
         }
 
       </Stack>
+      <Stack direction="row" spacing={2}>
+        <TextField
+          label="message"
+          fullWidth
+          value={message}
+          onChange={(e) => setMessage(e.target.value)} />
+        <Button variant="contained" onClick={sendMessage}
+        >Send</Button>
+      </Stack>
     </Stack>
   </Box>
+  )
 }
